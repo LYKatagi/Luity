@@ -1,0 +1,31 @@
+# Build output
+build/
+*.o
+*.elf
+*.iso
+*.bin
+
+# IDE / editor
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# QEMU
+*.qcow2
+*.img
+
+# Compiled/debug files
+*.map

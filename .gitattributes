@@ -1,0 +1,55 @@
+# ==============================
+# Luity - Git attributes
+# ==============================
+
+# Text files
+* text=auto
+
+# C / C++
+*.c       text diff
+*.h       text diff
+*.cpp     text diff
+*.hpp     text diff
+
+# Assembly
+*.asm     text diff
+*.s       text diff
+*.S       text diff
+
+# Build system
+Makefile  text eol=lf
+makefile  text eol=lf
+*.mk      text eol=lf
+
+# Linker scripts
+*.ld      text diff eol=lf
+
+# Configuration
+*.conf    text diff eol=lf
+*.ini     text diff eol=lf
+*.toml    text diff eol=lf
+*.yaml    text diff eol=lf
+*.yml     text diff eol=lf
+*.json    text diff eol=lf
+
+# Documentation
+*.md      text diff eol=lf
+*.txt     text diff eol=lf
+
+# Shell scripts
+*.sh      text eol=lf
+
+# Binary files
+*.o       binary
+*.elf     binary
+*.iso     binary
+*.bin     binary
+*.img     binary
+*.qcow2   binary
+
+# Images
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.bmp     binary
