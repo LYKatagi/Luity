@@ -4,6 +4,7 @@ build/
 *.elf
 *.iso
 *.bin
+iso/boot/kernel.elf
 
 # IDE / editor
 .vscode/
