@@ -1,22 +1,20 @@
 
-; Luity Kernel - Boot Entry
-
 bits 64
 
 section .text
+
 global _start
 extern kmain
 
 _start:
     cli
 
-    ; Set up the kernel stack.
-    mov rsp, stack_top
+    ; stack_top = 0xffffffff80005000
+    mov rsp, 0xffffffff80005000
 
-    ; Align stack to 16 bytes as required by the x86-64 ABI.
+    ; 16-byte alignment
     and rsp, -16
 
-    ; Enter the kernel.
     call kmain
 
 .hang:
