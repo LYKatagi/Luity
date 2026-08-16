@@ -95,13 +95,17 @@ $(KERNEL_ELF): $(OBJECTS) linker.ld | $(ISO)/boot
 iso: $(KERNEL_ISO)
 
 $(KERNEL_ISO): $(KERNEL_ELF) $(ISO)/boot/limine.conf
-	$(XORRISO) \
-		-as mkisofs \
-		-b limine-bios.sys \
-		-no-emul-boot \
-		-o $@ \
-		$(ISO)
-
+	$(XORRISO) -as mkisofs \
+    -b limine-bios-cd.bin \
+    -no-emul-boot \
+    -boot-load-size 4 \
+    -boot-info-table \
+    -eltorito-alt-boot \
+    -e limine-uefi-cd.bin \
+    -no-emul-boot \
+    -isohybrid-gpt-basdat \
+    -o build/kernel.iso \
+    iso
 	$(LIMINE) bios-install $@
 
 # ==========================================
