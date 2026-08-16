@@ -1,5 +1,5 @@
-; Luity Kernel
-; boot/boot.asm
+
+; Luity Kernel - Boot Entry
 
 bits 64
 
@@ -10,21 +10,16 @@ extern kmain
 _start:
     cli
 
-    ; Limine já colocou a CPU em long mode.
-    ; Usamos uma stack própria antes de chamar o kernel.
-    lea rsp, stack_top
+    ; Set up the kernel stack.
+    mov rsp, stack_top
 
+    ; Align stack to 16 bytes as required by the x86-64 ABI.
+    and rsp, -16
+
+    ; Enter the kernel.
     call kmain
 
 .hang:
     cli
     hlt
     jmp .hang
-
-
-section .bss
-align 16
-
-stack_bottom:
-    resb 16384                ; 16 KiB stack
-stack_top:
