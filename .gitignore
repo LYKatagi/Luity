@@ -3,7 +3,6 @@ build/
 *.o
 *.elf
 *.iso
-*.bin
 iso/boot/kernel.elf
 
 # IDE / editor

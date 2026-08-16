@@ -1,10 +1,8 @@
 
 
-// Initial Loop 
+// Initial loop for kernel
 
 void kmain(void)
 {
-    for (;;) {
-        __asm__ volatile ("hlt");
-    }
+    while (1){}
 }
