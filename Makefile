@@ -36,6 +36,7 @@ LDFLAGS := \
 
 C_SOURCES := $(wildcard kernel/*.c)
 ASM_SOURCES := $(wildcard boot/*.asm)
+HEADERS := $(wildcard include/*.h)
 
 C_OBJECTS := $(patsubst kernel/%.c,$(BUILD)/%.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst boot/%.asm,$(BUILD)/%.o,$(ASM_SOURCES))
@@ -63,7 +64,7 @@ $(ISO)/boot:
 # C → Assembly
 # ==========================================
 
-$(BUILD)/%.s: kernel/%.c include/limine.h | $(BUILD)
+$(BUILD)/%.s: kernel/%.c $(HEADERS) | $(BUILD)
 	$(CC) $(CFLAGS) -S $< -o $@
 
 # ==========================================

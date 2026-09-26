@@ -53,12 +53,37 @@ make run
 
 > Build and run commands may change as development progresses.
 
+## Graphics API
+
+The public API is declared in include/graphics.h. It provides pixel drawing,
+filled and outlined rectangles, 8x8 characters, and ASCII text. The Limine
+adapter in kernel/limine_framebuffer.c initializes a graphics context; the
+drawing routines live in kernel/graphics.c, and the glyph data lives in
+kernel/font8x8.c.
+
+Text wraps at the right edge and supports newlines and four-character tabs.
+Passing a null background keeps unset glyph pixels transparent. Printable
+ASCII characters are supported; other bytes are drawn as question marks.
+
+```c
+#include <graphics.h>
+#include <limine_framebuffer.h>
+
+struct gfx_context screen;
+struct gfx_color white = {255, 255, 255};
+
+if (limine_framebuffer_init(&screen)) {
+    gfx_clear(&screen, (struct gfx_color){18, 24, 38});
+    gfx_draw_text(&screen, 16, 16, "Hello, Luity!", white, 0);
+}
+```
+
 ## Repository Structure
 
 ```text
 Luity/
 ├── boot/          # Boot-related files
-├── include/       # Limine protocol definitions
+├── include/       # Graphics, font, and Limine headers
 ├── kernel/        # Kernel source code
 ├── build/         # Build output
 ├── iso/           # Bootloader files
