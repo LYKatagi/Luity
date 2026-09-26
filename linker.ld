@@ -10,6 +10,21 @@ SECTIONS
         *(.text .text.*)
     }
 
+    .limine_requests_start : ALIGN(8)
+    {
+        KEEP(*(.limine_requests_start))
+    }
+
+    .limine_requests : ALIGN(8)
+    {
+        KEEP(*(.limine_requests))
+    }
+
+    .limine_requests_end : ALIGN(8)
+    {
+        KEEP(*(.limine_requests_end))
+    }
+
     .rodata : ALIGN(4K)
     {
         *(.rodata .rodata.*)

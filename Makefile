@@ -26,6 +26,7 @@ CFLAGS := \
 	-O2 \
 	-mcmodel=kernel \
 	-mno-red-zone \
+	-mgeneral-regs-only \
 	-Iinclude
 
 ASFLAGS :=
@@ -36,7 +37,6 @@ LDFLAGS := \
 C_SOURCES := $(wildcard kernel/*.c)
 ASM_SOURCES := $(wildcard boot/*.asm)
 
-C_ASM := $(patsubst kernel/%.c,$(BUILD)/%.s,$(C_SOURCES))
 C_OBJECTS := $(patsubst kernel/%.c,$(BUILD)/%.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst boot/%.asm,$(BUILD)/%.o,$(ASM_SOURCES))
 
@@ -63,7 +63,7 @@ $(ISO)/boot:
 # C → Assembly
 # ==========================================
 
-$(BUILD)/%.s: kernel/%.c | $(BUILD)
+$(BUILD)/%.s: kernel/%.c include/limine.h | $(BUILD)
 	$(CC) $(CFLAGS) -S $< -o $@
 
 # ==========================================
@@ -94,7 +94,9 @@ $(KERNEL_ELF): $(OBJECTS) linker.ld | $(ISO)/boot
 .PHONY: iso
 iso: $(KERNEL_ISO)
 
-$(KERNEL_ISO): $(KERNEL_ELF) $(ISO)/boot/limine.conf
+$(KERNEL_ISO): $(KERNEL_ELF) $(ISO)/boot/limine.conf \
+	$(ISO)/limine-bios-cd.bin $(ISO)/limine-uefi-cd.bin \
+	$(ISO)/limine-bios.sys $(ISO)/BOOTX64.EFI $(ISO)/BOOTIA32.EFI
 	$(XORRISO) -as mkisofs \
     -b limine-bios-cd.bin \
     -no-emul-boot \
@@ -104,7 +106,7 @@ $(KERNEL_ISO): $(KERNEL_ELF) $(ISO)/boot/limine.conf
     -e limine-uefi-cd.bin \
     -no-emul-boot \
     -isohybrid-gpt-basdat \
-    -o build/kernel.iso \
+    -o $@ \
     iso
 	$(LIMINE) bios-install $@
 

@@ -40,7 +40,8 @@ Once the required toolchain is installed, the kernel can be built using:
 make
 ```
 
-The generated kernel and bootable image are placed in the build directory.
+The kernel ELF is written to iso/boot/kernel.elf, and the bootable image is
+written to build/kernel.iso.
 
 ## Running
 
@@ -57,7 +58,7 @@ make run
 ```text
 Luity/
 ├── boot/          # Boot-related files
-├── include/       # Kernel headers
+├── include/       # Limine protocol definitions
 ├── kernel/        # Kernel source code
 ├── build/         # Build output
 ├── iso/           # Bootloader files
@@ -68,7 +69,7 @@ Luity/
 
 ## License
 
-This project is currently under development. See the `LICENSE` file for the applicable license.
+No license file is included, so the project has not declared a license yet.
 
 ## Disclaimer
 

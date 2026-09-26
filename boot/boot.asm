@@ -9,10 +9,7 @@ extern kmain
 _start:
     cli
 
-    ; stack_top = 0xffffffff80005000
-    mov rsp, 0xffffffff80005000
-
-    ; 16-byte alignment
+    ; Keep Limine's valid boot stack and align it for the SysV ABI.
     and rsp, -16
 
     call kmain
