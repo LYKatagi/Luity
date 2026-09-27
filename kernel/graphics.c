@@ -144,6 +144,44 @@ bool gfx_put_pixel(struct gfx_context *context, uint64_t x, uint64_t y,
     return true;
 }
 
+static uint8_t unpack_channel(uint32_t pixel, uint8_t size, uint8_t shift)
+{
+    uint64_t max_value = (1ULL << size) - 1;
+    uint64_t value = (pixel >> shift) & max_value;
+
+    return (uint8_t)((value * 255 + max_value / 2) / max_value);
+}
+
+bool gfx_get_pixel(const struct gfx_context *context, uint64_t x, uint64_t y,
+                   struct gfx_color *color)
+{
+    const struct gfx_surface *surface;
+    const volatile uint8_t *source;
+    uint64_t bytes_per_pixel;
+    uint32_t pixel = 0;
+
+    if (context == 0 || !context->initialized || color == 0 ||
+        x >= context->surface.width || y >= context->surface.height) {
+        return false;
+    }
+
+    surface = &context->surface;
+    bytes_per_pixel = surface->bits_per_pixel / 8;
+    source = surface->pixels + y * surface->pitch + x * bytes_per_pixel;
+
+    for (uint64_t byte = 0; byte < bytes_per_pixel; byte++) {
+        pixel |= (uint32_t)source[byte] << (byte * 8);
+    }
+
+    color->red = unpack_channel(pixel, surface->red_mask_size,
+                                surface->red_mask_shift);
+    color->green = unpack_channel(pixel, surface->green_mask_size,
+                                  surface->green_mask_shift);
+    color->blue = unpack_channel(pixel, surface->blue_mask_size,
+                                 surface->blue_mask_shift);
+    return true;
+}
+
 void gfx_fill_rect(struct gfx_context *context, uint64_t x, uint64_t y,
                    uint64_t width, uint64_t height, struct gfx_color color)
 {
@@ -280,6 +318,95 @@ void gfx_draw_text(struct gfx_context *context, uint64_t x, uint64_t y,
                 return;
             }
             x += GFX_FONT_WIDTH;
+        }
+
+        if (y >= context->surface.height) {
+            return;
+        }
+    }
+}
+
+static void gfx_draw_char_scaled(struct gfx_context *context, uint64_t x,
+                                 uint64_t y, uint8_t character,
+                                 struct gfx_color foreground,
+                                 const struct gfx_color *background,
+                                 uint64_t scale)
+{
+    if (scale == 0 || scale > UINT64_MAX / GFX_FONT_WIDTH) {
+        return;
+    }
+
+    uint64_t cell_size = GFX_FONT_WIDTH * scale;
+    if (x > UINT64_MAX - cell_size || y > UINT64_MAX - cell_size) {
+        return;
+    }
+
+    if (background != 0) {
+        gfx_fill_rect(context, x, y, cell_size, cell_size, *background);
+    }
+
+    const uint8_t *glyph = font8x8_get_glyph(character);
+    for (uint64_t row = 0; row < GFX_FONT_HEIGHT; row++) {
+        for (uint64_t column = 0; column < GFX_FONT_WIDTH; column++) {
+            if ((glyph[row] & (1u << column)) != 0) {
+                gfx_fill_rect(context, x + column * scale,
+                              y + row * scale, scale, scale, foreground);
+            }
+        }
+    }
+}
+
+void gfx_draw_text_scaled(struct gfx_context *context, uint64_t x, uint64_t y,
+                          const char *text, struct gfx_color foreground,
+                          const struct gfx_color *background, uint64_t scale)
+{
+    if (context == 0 || !context->initialized || text == 0 || scale == 0 ||
+        scale > UINT64_MAX / (GFX_FONT_WIDTH * 4)) {
+        return;
+    }
+
+    uint64_t cell_size = GFX_FONT_WIDTH * scale;
+    uint64_t line_start = x;
+
+    for (; *text != '\0'; text++) {
+        if (*text == '\n') {
+            x = line_start;
+            if (y > UINT64_MAX - cell_size) {
+                return;
+            }
+            y += cell_size;
+        } else if (*text == '\r') {
+            x = line_start;
+        } else if (*text == '\t') {
+            if (x > UINT64_MAX - cell_size * 4) {
+                return;
+            }
+            x += cell_size * 4;
+        } else {
+            if (x >= context->surface.width ||
+                cell_size > context->surface.width - x) {
+                x = line_start;
+                if (x >= context->surface.width ||
+                    cell_size > context->surface.width - x) {
+                    x = 0;
+                    line_start = 0;
+                }
+                if (y > UINT64_MAX - cell_size) {
+                    return;
+                }
+                y += cell_size;
+            }
+
+            if (y >= context->surface.height) {
+                return;
+            }
+
+            gfx_draw_char_scaled(context, x, y, (uint8_t)*text, foreground,
+                                 background, scale);
+            if (x > UINT64_MAX - cell_size) {
+                return;
+            }
+            x += cell_size;
         }
 
         if (y >= context->surface.height) {

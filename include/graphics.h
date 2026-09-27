@@ -45,6 +45,8 @@ uint64_t gfx_height(const struct gfx_context *context);
 void gfx_clear(struct gfx_context *context, struct gfx_color color);
 bool gfx_put_pixel(struct gfx_context *context, uint64_t x, uint64_t y,
                    struct gfx_color color);
+bool gfx_get_pixel(const struct gfx_context *context, uint64_t x, uint64_t y,
+                   struct gfx_color *color);
 void gfx_fill_rect(struct gfx_context *context, uint64_t x, uint64_t y,
                    uint64_t width, uint64_t height, struct gfx_color color);
 void gfx_draw_rect(struct gfx_context *context, uint64_t x, uint64_t y,
@@ -57,5 +59,8 @@ void gfx_draw_char(struct gfx_context *context, uint64_t x, uint64_t y,
 void gfx_draw_text(struct gfx_context *context, uint64_t x, uint64_t y,
                    const char *text, struct gfx_color foreground,
                    const struct gfx_color *background);
+void gfx_draw_text_scaled(struct gfx_context *context, uint64_t x, uint64_t y,
+                          const char *text, struct gfx_color foreground,
+                          const struct gfx_color *background, uint64_t scale);
 
 #endif

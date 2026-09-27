@@ -34,9 +34,9 @@ ASFLAGS :=
 LDFLAGS := \
 	-T linker.ld
 
-C_SOURCES := $(wildcard kernel/*.c)
+C_SOURCES := $(shell find kernel -type f -name '*.c')
 ASM_SOURCES := $(wildcard boot/*.asm)
-HEADERS := $(wildcard include/*.h)
+HEADERS := $(shell find include -type f -name '*.h')
 
 C_OBJECTS := $(patsubst kernel/%.c,$(BUILD)/%.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst boot/%.asm,$(BUILD)/%.o,$(ASM_SOURCES))
@@ -64,21 +64,23 @@ $(ISO)/boot:
 # C → Assembly
 # ==========================================
 
-$(BUILD)/%.s: kernel/%.c $(HEADERS) | $(BUILD)
+$(BUILD)/%.s: kernel/%.c $(HEADERS)
+	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -S $< -o $@
-
 # ==========================================
 # Assembly → Object
 # ==========================================
 
 $(BUILD)/%.o: $(BUILD)/%.s
+	@mkdir -p $(dir $@)
 	$(AS) $(ASFLAGS) $< -o $@
 
 # ==========================================
 # NASM → Object
 # ==========================================
 
-$(BUILD)/%.o: boot/%.asm | $(BUILD)
+$(BUILD)/%.o: boot/%.asm
+	@mkdir -p $(dir $@)
 	$(NASM) -f elf64 $< -o $@
 
 # ==========================================

@@ -63,7 +63,8 @@ kernel/font8x8.c.
 
 Text wraps at the right edge and supports newlines and four-character tabs.
 Passing a null background keeps unset glyph pixels transparent. Printable
-ASCII characters are supported; other bytes are drawn as question marks.
+ASCII characters are supported; other bytes are drawn as question marks. The
+API also provides scaled bitmap text for headings and labels.
 
 ```c
 #include <graphics.h>
@@ -77,6 +78,15 @@ if (limine_framebuffer_init(&screen)) {
     gfx_draw_text(&screen, 16, 16, "Hello, Luity!", white, 0);
 }
 ```
+
+## Mouse input
+
+The kernel initializes the legacy PIC and the PS/2 auxiliary port, then routes
+IRQ12 to the mouse packet handler. A 100 Hz PIT tick also checks the controller
+buffer as a fallback for platforms that fail to deliver the auxiliary IRQ.
+The cursor is rendered through the graphics API, starts in the center of the
+framebuffer, and restores the pixels beneath its previous position as it moves.
+The welcome screen reports whether the PS/2 mouse answered initialization.
 
 ## Repository Structure
 
