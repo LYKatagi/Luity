@@ -2,9 +2,9 @@
 #include <drivers/input/ps2/controller.h>
 #include <events/event.h>
 
-#define MOUSE_ACK       0xFA
+#define MOUSE_ACK 0xFA
 #define MOUSE_CMD_SET_DEFAULTS 0xF6
-#define MOUSE_CMD_ENABLE_DATA  0xF4
+#define MOUSE_CMD_ENABLE_DATA 0xF4
 
 static struct mouse_state state = {
     .x = 0,
@@ -14,8 +14,7 @@ static struct mouse_state state = {
     .buttons = 0,
     .left = false,
     .right = false,
-    .middle = false
-};
+    .middle = false};
 
 static uint8_t packet[3];
 static uint8_t packet_index = 0;
@@ -24,28 +23,35 @@ static int64_t max_y = INT64_MAX;
 
 static bool mouse_send_command(uint8_t command)
 {
-    for (unsigned int attempt = 0; attempt < 3; attempt++) {
-        if (!ps2_write_mouse(command)) {
+    for (unsigned int attempt = 0; attempt < 3; attempt++)
+    {
+        if (!ps2_write_mouse(command))
+        {
             return false;
         }
 
         bool resend = false;
-        for (uint32_t timeout = 0; timeout < PS2_POLL_LIMIT; timeout++) {
+        for (uint32_t timeout = 0; timeout < PS2_POLL_LIMIT; timeout++)
+        {
             uint8_t status = ps2_read_status();
-            if ((status & PS2_STATUS_OUTPUT_FULL) == 0) {
+            if ((status & PS2_STATUS_OUTPUT_FULL) == 0)
+            {
                 continue;
             }
 
             uint8_t response = ps2_read_data();
             if ((status & PS2_STATUS_AUXILIARY) == 0 ||
-                (status & (PS2_STATUS_TIMEOUT | PS2_STATUS_PARITY)) != 0) {
+                (status & (PS2_STATUS_TIMEOUT | PS2_STATUS_PARITY)) != 0)
+            {
                 continue;
             }
 
-            if (response == MOUSE_ACK) {
+            if (response == MOUSE_ACK)
+            {
                 return true;
             }
-            if (response == 0xFE) {
+            if (response == 0xFE)
+            {
                 resend = true;
                 break;
             }
@@ -53,7 +59,8 @@ static bool mouse_send_command(uint8_t command)
             return false;
         }
 
-        if (!resend) {
+        if (!resend)
+        {
             return false;
         }
     }
@@ -64,16 +71,18 @@ static bool mouse_send_command(uint8_t command)
 bool mouse_init(void)
 {
     /*
-     * Restaurar configuração padrão.
+     * Restore the default configuration.
      */
-    if (!mouse_send_command(MOUSE_CMD_SET_DEFAULTS)) {
+    if (!mouse_send_command(MOUSE_CMD_SET_DEFAULTS))
+    {
         return false;
     }
 
     /*
-     * Habilitar envio de dados.
+     * Enable data reporting.
      */
-    if (!mouse_send_command(MOUSE_CMD_ENABLE_DATA)) {
+    if (!mouse_send_command(MOUSE_CMD_ENABLE_DATA))
+    {
         return false;
     }
 
@@ -93,7 +102,8 @@ bool mouse_init(void)
 
 void mouse_set_bounds(uint64_t width, uint64_t height)
 {
-    if (width == 0 || height == 0) {
+    if (width == 0 || height == 0)
+    {
         max_x = 0;
         max_y = 0;
         state.x = 0;
@@ -109,18 +119,22 @@ void mouse_set_bounds(uint64_t width, uint64_t height)
 
 static int64_t add_clamped(int64_t position, int32_t delta, int64_t maximum)
 {
-    if (delta > 0 && position > maximum - delta) {
+    if (delta > 0 && position > maximum - delta)
+    {
         return maximum;
     }
-    if (delta < 0 && position < -(int64_t)delta) {
+    if (delta < 0 && position < -(int64_t)delta)
+    {
         return 0;
     }
 
     position += delta;
-    if (position < 0) {
+    if (position < 0)
+    {
         return 0;
     }
-    if (position > maximum) {
+    if (position > maximum)
+    {
         return maximum;
     }
     return position;
@@ -129,20 +143,22 @@ static int64_t add_clamped(int64_t position, int32_t delta, int64_t maximum)
 void mouse_handle_byte(uint8_t byte)
 {
     /*
-     * Primeiro byte de um pacote PS/2 possui o bit 3 sempre em 1.
+     * The first byte of a PS/2 packet always has bit 3 set.
      *
-     * Isso também ajuda a recuperar a sincronização caso algum byte
-     * seja perdido.
+     * This also helps recover synchronization if a byte is lost.
      */
-    if (packet_index == 0) {
-        if ((byte & 0x08) == 0) {
+    if (packet_index == 0)
+    {
+        if ((byte & 0x08) == 0)
+        {
             return;
         }
     }
 
     packet[packet_index++] = byte;
 
-    if (packet_index < 3) {
+    if (packet_index < 3)
+    {
         return;
     }
 
@@ -151,9 +167,10 @@ void mouse_handle_byte(uint8_t byte)
     uint8_t flags = packet[0];
 
     /*
-     * Ignorar pacotes com overflow.
+     * Ignore packets with overflow.
      */
-    if ((flags & 0x40) != 0 || (flags & 0x80) != 0) {
+    if ((flags & 0x40) != 0 || (flags & 0x80) != 0)
+    {
         return;
     }
 
@@ -168,11 +185,13 @@ void mouse_handle_byte(uint8_t byte)
      * Bit 4 = sinal de X
      * Bit 5 = sinal de Y
      */
-    if ((flags & 0x10) != 0) {
+    if ((flags & 0x10) != 0)
+    {
         dx |= 0xFF00;
     }
 
-    if ((flags & 0x20) != 0) {
+    if ((flags & 0x20) != 0)
+    {
         dy |= 0xFF00;
     }
 
@@ -180,18 +199,18 @@ void mouse_handle_byte(uint8_t byte)
     state.delta_y = dy;
 
     /*
-     * PS/2 considera Y positivo como movimento para cima.
-     * Na tela do framebuffer, Y normalmente cresce para baixo.
+     * PS/2 treats positive Y as movement upward.
+     * On the framebuffer, Y usually grows downward.
      */
     state.x = add_clamped(state.x, dx, max_x);
     state.y = add_clamped(state.y, -(int32_t)dy, max_y);
 
     /*
-     * Botões:
+     * Buttons:
      *
-     * bit 0 = esquerdo
-     * bit 1 = direito
-     * bit 2 = meio
+     * bit 0 = left
+     * bit 1 = right
+     * bit 2 = middle
      */
     state.buttons = flags & 0x07;
 
@@ -199,7 +218,8 @@ void mouse_handle_byte(uint8_t byte)
     state.right = (state.buttons & 0x02) != 0;
     state.middle = (state.buttons & 0x04) != 0;
 
-    if (state.x != old_x || state.y != old_y) {
+    if (state.x != old_x || state.y != old_y)
+    {
         struct kernel_event event = {
             .type = KERNEL_EVENT_MOUSE_MOVE,
             .x = state.x,
@@ -217,12 +237,14 @@ void mouse_handle_byte(uint8_t byte)
     };
 
     for (uint64_t index = 0;
-         index < sizeof(button_masks) / sizeof(button_masks[0]); index++) {
+         index < sizeof(button_masks) / sizeof(button_masks[0]); index++)
+    {
         uint8_t button = button_masks[index];
         bool was_pressed = (old_buttons & button) != 0;
         bool is_pressed = (state.buttons & button) != 0;
 
-        if (was_pressed == is_pressed) {
+        if (was_pressed == is_pressed)
+        {
             continue;
         }
 
