@@ -1,4 +1,4 @@
-#include <drivers/ps2/controller.h>
+#include <drivers/input/ps2/controller.h>
 #include <interrupts/irq12.h>
 #include <interrupts/pic.h>
 

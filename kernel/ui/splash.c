@@ -1,5 +1,5 @@
 #include <graphics.h>
-#include <splash.h>
+#include <ui/splash.h>
 
 static struct gfx_color blend(struct gfx_color start, struct gfx_color end,
                               uint64_t step, uint64_t steps)
@@ -76,7 +76,38 @@ static void draw_feature_card(struct gfx_context *graphics, uint64_t x,
                   (struct gfx_color){233, 240, 249}, 0);
 }
 
-void splash_draw(struct gfx_context *graphics, bool mouse_ready)
+static void set_button(struct gfx_button *button, uint64_t x, uint64_t y,
+                       uint64_t width, uint64_t height, const char *label,
+                       uint8_t action)
+{
+    *button = (struct gfx_button) {
+        .x = x,
+        .y = y,
+        .width = width,
+        .height = height,
+        .label = label,
+        .action = action,
+        .state = GFX_BUTTON_IDLE,
+        .armed = false,
+    };
+}
+
+static void draw_message(struct splash_screen *screen, const char *message,
+                         struct gfx_color color)
+{
+    if (screen->message_width == 0) {
+        return;
+    }
+
+    gfx_fill_rect(screen->graphics, screen->message_x, screen->message_y,
+                  screen->message_width, GFX_FONT_HEIGHT,
+                  (struct gfx_color){17, 28, 46});
+    gfx_draw_text(screen->graphics, screen->message_x, screen->message_y,
+                  message, color, 0);
+}
+
+void splash_init(struct splash_screen *screen, struct gfx_context *graphics,
+                 bool mouse_ready)
 {
     const struct gfx_color white = {240, 246, 253};
     const struct gfx_color muted = {163, 181, 204};
@@ -87,10 +118,11 @@ void splash_draw(struct gfx_context *graphics, bool mouse_ready)
     uint64_t width = gfx_width(graphics);
     uint64_t height = gfx_height(graphics);
 
-    if (width == 0 || height == 0) {
+    if (screen == 0 || graphics == 0 || width == 0 || height == 0) {
         return;
     }
 
+    screen->graphics = graphics;
     draw_background(graphics);
     draw_brand(graphics);
 
@@ -101,6 +133,15 @@ void splash_draw(struct gfx_context *graphics, bool mouse_ready)
         gfx_draw_text(graphics, 24, 184,
                       mouse_ready ? "PS/2 MOUSE CONNECTED" : "PS/2 MOUSE NOT FOUND",
                       mouse_ready ? teal : (struct gfx_color){235, 174, 112}, 0);
+        set_button(&screen->buttons[0], 24, 222, 136, 36, "GET STARTED", 1);
+        set_button(&screen->buttons[1], 172, 222, 96, 36, "ABOUT", 2);
+        for (uint64_t index = 0; index < SPLASH_BUTTON_COUNT; index++) {
+            gfx_button_draw(graphics, &screen->buttons[index]);
+        }
+        screen->message_x = 24;
+        screen->message_y = 274;
+        screen->message_width = width > 48 ? width - 48 : width;
+        draw_message(screen, "MOVE, HOVER, CLICK.", muted);
         return;
     }
 
@@ -147,16 +188,20 @@ void splash_draw(struct gfx_context *graphics, bool mouse_ready)
                   muted, 0);
 
     uint64_t button_y = panel_y + panel_height - 57;
-    uint64_t button_width = 196;
-    if (panel_width < button_width + 50) {
-        button_width = panel_width > 50 ? panel_width - 50 : panel_width;
+    set_button(&screen->buttons[0], inner_x, button_y, 148, 34,
+               "GET STARTED", 1);
+    set_button(&screen->buttons[1], inner_x + 160, button_y, 92, 34,
+               "ABOUT", 2);
+    for (uint64_t index = 0; index < SPLASH_BUTTON_COUNT; index++) {
+        gfx_button_draw(graphics, &screen->buttons[index]);
     }
-    gfx_fill_rect(graphics, inner_x, button_y, button_width, 34,
-                  (struct gfx_color){28, 82, 87});
-    gfx_draw_rect(graphics, inner_x, button_y, button_width, 34,
-                  (struct gfx_color){54, 155, 145});
-    gfx_draw_text(graphics, inner_x + 14, button_y + 13, "MOVE TO EXPLORE",
-                  white, 0);
+
+    screen->message_x = inner_x;
+    screen->message_y = text_y + 126;
+    screen->message_width = right_x > inner_x + 12
+        ? right_x - inner_x - 12
+        : 0;
+    draw_message(screen, "MOVE, HOVER, CLICK.", muted);
 
     if (right_width > 64 && right_height > 80) {
         gfx_fill_rect(graphics, right_x, right_y, right_width, right_height, card);
@@ -210,5 +255,32 @@ void splash_draw(struct gfx_context *graphics, bool mouse_ready)
         gfx_draw_text(graphics, margin, height - 17,
                       "LUITY  -  AN EXPERIMENTAL HOBBY KERNEL",
                       (struct gfx_color){111, 132, 158}, 0);
+    }
+}
+
+void splash_handle_event(struct splash_screen *screen,
+                         const struct kernel_event *event)
+{
+    if (screen == 0 || screen->graphics == 0 || event == 0) {
+        return;
+    }
+
+    uint8_t action = 0;
+    for (uint64_t index = 0; index < SPLASH_BUTTON_COUNT; index++) {
+        uint8_t result = gfx_button_handle_event(&screen->buttons[index], event);
+        if ((result & GFX_BUTTON_REDRAW) != 0) {
+            gfx_button_draw(screen->graphics, &screen->buttons[index]);
+        }
+        if ((result & GFX_BUTTON_ACTIVATED) != 0) {
+            action = screen->buttons[index].action;
+        }
+    }
+
+    if (action == 1) {
+        draw_message(screen, "INPUT EVENTS ARE WORKING.",
+                     (struct gfx_color){63, 221, 198});
+    } else if (action == 2) {
+        draw_message(screen, "LUITY IS AN X86_64 HOBBY OS.",
+                     (struct gfx_color){167, 190, 220});
     }
 }

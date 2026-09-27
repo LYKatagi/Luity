@@ -183,11 +183,19 @@ FILES=(
     "Makefile"
     "linker.ld"
     "README.md"
-    "CHANGELOG.md"
     "kernel/main.c"
-    "kernel/graphics.c"
-    "kernel/font8x8.c"
-    "kernel/limine_framebuffer.c"
+    "kernel/core/kernel.c"
+    "kernel/events/event.c"
+    "kernel/graphics/graphics.c"
+    "kernel/graphics/font8x8.c"
+    "kernel/graphics/widgets/button.c"
+    "kernel/ui/splash.c"
+    "kernel/boot/limine_framebuffer.c"
+    "include/events/event.h"
+    "include/graphics/widgets/button.h"
+    "include/ui/splash.h"
+    "include/drivers/input/mouse/mouse.h"
+    "include/drivers/input/ps2/controller.h"
     "include/graphics.h"
     "include/font8x8.h"
     "include/limine_framebuffer.h"
@@ -217,7 +225,20 @@ section "DIRECTORIES"
 
 for dir in \
     kernel \
+    kernel/core \
+    kernel/events \
+    kernel/graphics \
+    kernel/graphics/widgets \
+    kernel/ui \
+    kernel/boot \
+    kernel/drivers/input/mouse \
+    kernel/drivers/input/ps2 \
     include \
+    include/events \
+    include/graphics/widgets \
+    include/ui \
+    include/drivers/input/mouse \
+    include/drivers/input/ps2 \
     boot \
     iso \
     iso/boot \

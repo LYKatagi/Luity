@@ -1,5 +1,6 @@
-#include <drivers/mouse/mouse.h>
-#include <drivers/ps2/controller.h>
+#include <drivers/input/mouse/mouse.h>
+#include <drivers/input/ps2/controller.h>
+#include <events/event.h>
 
 #define MOUSE_ACK       0xFA
 #define MOUSE_CMD_SET_DEFAULTS 0xF6
@@ -156,6 +157,10 @@ void mouse_handle_byte(uint8_t byte)
         return;
     }
 
+    int64_t old_x = state.x;
+    int64_t old_y = state.y;
+    uint8_t old_buttons = state.buttons;
+
     int16_t dx = (int16_t)packet[1];
     int16_t dy = (int16_t)packet[2];
 
@@ -193,6 +198,44 @@ void mouse_handle_byte(uint8_t byte)
     state.left = (state.buttons & 0x01) != 0;
     state.right = (state.buttons & 0x02) != 0;
     state.middle = (state.buttons & 0x04) != 0;
+
+    if (state.x != old_x || state.y != old_y) {
+        struct kernel_event event = {
+            .type = KERNEL_EVENT_MOUSE_MOVE,
+            .x = state.x,
+            .y = state.y,
+            .button = 0,
+            .buttons = state.buttons,
+        };
+        event_post(&event);
+    }
+
+    static const uint8_t button_masks[] = {
+        MOUSE_BUTTON_LEFT,
+        MOUSE_BUTTON_RIGHT,
+        MOUSE_BUTTON_MIDDLE,
+    };
+
+    for (uint64_t index = 0;
+         index < sizeof(button_masks) / sizeof(button_masks[0]); index++) {
+        uint8_t button = button_masks[index];
+        bool was_pressed = (old_buttons & button) != 0;
+        bool is_pressed = (state.buttons & button) != 0;
+
+        if (was_pressed == is_pressed) {
+            continue;
+        }
+
+        struct kernel_event event = {
+            .type = is_pressed ? KERNEL_EVENT_MOUSE_BUTTON_DOWN
+                               : KERNEL_EVENT_MOUSE_BUTTON_UP,
+            .x = state.x,
+            .y = state.y,
+            .button = button,
+            .buttons = state.buttons,
+        };
+        event_post(&event);
+    }
 }
 
 const struct mouse_state *mouse_get_state(void)

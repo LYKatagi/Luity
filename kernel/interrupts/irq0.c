@@ -1,5 +1,5 @@
-#include <drivers/mouse/mouse.h>
-#include <drivers/ps2/controller.h>
+#include <drivers/input/mouse/mouse.h>
+#include <drivers/input/ps2/controller.h>
 #include <interrupts/pic.h>
 
 /* PIT polling keeps input responsive if a platform drops the auxiliary IRQ. */

@@ -1,4 +1,4 @@
-#include <drivers/ps2/controller.h>
+#include <drivers/input/ps2/controller.h>
 #include <io.h>
 
 

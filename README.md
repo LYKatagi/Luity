@@ -57,9 +57,10 @@ make run
 
 The public API is declared in include/graphics.h. It provides pixel drawing,
 filled and outlined rectangles, 8x8 characters, and ASCII text. The Limine
-adapter in kernel/limine_framebuffer.c initializes a graphics context; the
-drawing routines live in kernel/graphics.c, and the glyph data lives in
-kernel/font8x8.c.
+adapter in kernel/boot/limine_framebuffer.c initializes a graphics context;
+the drawing routines live in kernel/graphics/graphics.c, and the glyph data
+lives in kernel/graphics/font8x8.c. Interactive widgets are in
+kernel/graphics/widgets/ and the welcome screen is in kernel/ui/.
 
 Text wraps at the right edge and supports newlines and four-character tabs.
 Passing a null background keeps unset glyph pixels transparent. Printable
@@ -86,7 +87,9 @@ IRQ12 to the mouse packet handler. A 100 Hz PIT tick also checks the controller
 buffer as a fallback for platforms that fail to deliver the auxiliary IRQ.
 The cursor is rendered through the graphics API, starts in the center of the
 framebuffer, and restores the pixels beneath its previous position as it moves.
-The welcome screen reports whether the PS/2 mouse answered initialization.
+Mouse movement and button transitions are queued as kernel events. The welcome
+screen has clickable **Get Started** and **About** buttons with hover and pressed
+states. The cursor uses a scaled black and white arrow with a drop shadow.
 
 ## Repository Structure
 

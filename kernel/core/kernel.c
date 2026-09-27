@@ -1,13 +1,14 @@
 #include <graphics.h>
-#include <drivers/mouse/mouse.h>
-#include <drivers/mouse/cursor.h>
-#include <splash.h>
-#include <drivers/ps2/controller.h>
+#include <drivers/input/mouse/mouse.h>
+#include <drivers/input/mouse/cursor.h>
+#include <drivers/input/ps2/controller.h>
+#include <events/event.h>
 #include <interrupts/idt.h>
 #include <interrupts/irq12.h>
-#include <interrupts/pit.h>
 #include <interrupts/pic.h>
+#include <interrupts/pit.h>
 #include <limine_framebuffer.h>
+#include <ui/splash.h>
 
 static void halt(void)
 {
@@ -34,6 +35,7 @@ static uint64_t clamp_mouse_position(int64_t position, uint64_t limit,
 void kernel_start(void)
 {
     struct gfx_context graphics;
+    struct splash_screen splash;
     bool mouse_ready = false;
 
     idt_init();
@@ -52,7 +54,7 @@ void kernel_start(void)
     }
 
     mouse_set_bounds(gfx_width(&graphics), gfx_height(&graphics));
-    splash_draw(&graphics, mouse_ready);
+    splash_init(&splash, &graphics, mouse_ready);
 
     const struct mouse_state *mouse = mouse_get_state();
     uint64_t cursor_x = clamp_mouse_position(mouse->x, gfx_width(&graphics),
@@ -64,29 +66,22 @@ void kernel_start(void)
     __asm__ volatile("sti");
 
     for (;;) {
-        int64_t mouse_x;
-        int64_t mouse_y;
-        uint64_t next_x;
-        uint64_t next_y;
+        struct kernel_event event;
 
-        /* Take a consistent snapshot and avoid missing an IRQ while sleeping. */
+        /* IRQ producers are masked briefly while the event queue is read. */
         __asm__ volatile("cli" : : : "memory");
-        mouse = mouse_get_state();
-        mouse_x = mouse->x;
-        mouse_y = mouse->y;
-        next_x = clamp_mouse_position(mouse_x, gfx_width(&graphics),
-                                      MOUSE_CURSOR_RENDER_WIDTH);
-        next_y = clamp_mouse_position(mouse_y, gfx_height(&graphics),
-                                      MOUSE_CURSOR_RENDER_HEIGHT);
-
-        if (next_x == cursor_x && next_y == cursor_y) {
+        if (!event_poll(&event)) {
             __asm__ volatile("sti; hlt" : : : "memory");
             continue;
         }
-
         __asm__ volatile("sti" : : : "memory");
-        mouse_cursor_draw(&graphics, next_x, next_y);
-        cursor_x = next_x;
-        cursor_y = next_y;
+
+        mouse_cursor_erase(&graphics);
+        splash_handle_event(&splash, &event);
+        cursor_x = clamp_mouse_position(event.x, gfx_width(&graphics),
+                                        MOUSE_CURSOR_RENDER_WIDTH);
+        cursor_y = clamp_mouse_position(event.y, gfx_height(&graphics),
+                                        MOUSE_CURSOR_RENDER_HEIGHT);
+        mouse_cursor_draw(&graphics, cursor_x, cursor_y);
     }
 }
