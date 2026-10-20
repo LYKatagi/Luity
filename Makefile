@@ -34,9 +34,12 @@ ASFLAGS :=
 LDFLAGS := \
 	-T linker.ld
 
-C_SOURCES := $(shell find kernel -type f -name '*.c')
+# GNU Make's wildcard keeps recursive source discovery independent of the
+# shell's `find` implementation (PowerShell/cmd's built-in `find` is different).
+rwildcard = $(wildcard $1$2) $(foreach dir,$(wildcard $1*/),$(call rwildcard,$(dir),$2))
+C_SOURCES := $(sort $(call rwildcard,kernel/,*.c))
 ASM_SOURCES := $(wildcard boot/*.asm)
-HEADERS := $(shell find include -type f -name '*.h')
+HEADERS := $(sort $(call rwildcard,include/,*.h))
 
 C_OBJECTS := $(patsubst kernel/%.c,$(BUILD)/%.o,$(C_SOURCES))
 ASM_OBJECTS := $(patsubst boot/%.asm,$(BUILD)/%.o,$(ASM_SOURCES))
@@ -110,6 +113,9 @@ $(KERNEL_ISO): $(KERNEL_ELF) $(ISO)/boot/limine.conf \
     -no-emul-boot \
     -isohybrid-gpt-basdat \
     -o $@ \
+    -graft-points \
+    EFI/BOOT/BOOTX64.EFI=iso/BOOTX64.EFI \
+    EFI/BOOT/BOOTIA32.EFI=iso/BOOTIA32.EFI \
     iso
 	$(LIMINE) bios-install $@
 
@@ -121,7 +127,9 @@ $(KERNEL_ISO): $(KERNEL_ELF) $(ISO)/boot/limine.conf \
 run: $(KERNEL_ISO)
 	$(QEMU) \
 		-m 128M \
-		-cdrom $(KERNEL_ISO)
+		-cdrom $(KERNEL_ISO) \
+		-device piix3-usb-uhci,id=usb \
+		-device usb-mouse,bus=usb.0
 
 # ==========================================
 # Clean

@@ -27,10 +27,18 @@ It performs the following:
 - initializes the PS/2 mouse
 - restores default configuration
 - enables reporting mode
-- reads a 3-byte packet
-- decodes relative movement and button state
+- reads 3-byte relative mouse packets or 6-byte Synaptics touchpad packets
+- decodes movement, touch contacts, and button state
 - clamps the cursor position within the framebuffer bounds
 - posts mouse events to the kernel event queue
+
+The PS/2 driver also probes for Synaptics touchpads. When the device identifies
+itself with the Synaptics PS/2 signature, the driver switches it into absolute
+mode, reads its model to select the six-byte packet layout, maps coordinates to
+the framebuffer, and converts a short single-finger contact into a left click.
+Other devices continue through the standard three-byte relative mouse path,
+which also covers touchpads exposed by firmware in PS/2 mouse compatibility
+mode.
 
 ## Mouse packet format
 
@@ -87,6 +95,30 @@ The current mouse implementation is intentionally basic:
 - no advanced pointer acceleration
 - no multi-device abstraction
 - no generalized input framework
+
+## USB host and pointing devices
+
+The USB core API is in `include/usb/usb.h` and `kernel/usb/usb.c`. It exposes
+device information, control transfers, interrupt-IN transfers, and a polling
+hook for class drivers. UHCI host-controller support lives in
+`kernel/drivers/usb/uhci.c`; it discovers a PCI UHCI controller, resets its
+root ports, and uses DMA memory allocated from Limine's usable-memory map via
+the HHDM.
+
+The HID driver accepts a USB boot mouse or a simple report-protocol pointer
+connected directly to either UHCI root port. It parses relative X/Y mouse
+reports and absolute X/Y touchpad reports with Tip Switch or Contact Count.
+Touchpad coordinates are mapped to the framebuffer and a short tap generates a
+left click. Synaptics PS/2 touchpads use native absolute mode when detected;
+other PS/2 touchpads work when firmware exposes them in standard mouse
+compatibility mode. All reports use the shared pointer state/event path, so
+they reach the existing buttons and graphics.
+
+Current limits: UHCI (USB 1.1) only, one directly attached USB pointer, and no
+USB hubs, OHCI/EHCI/xHCI controllers, or I2C-HID touchpads. The report-protocol
+HID parser and the Synaptics path support single-contact cursor motion and do
+not implement multi-finger gestures. The `make run` target attaches a QEMU UHCI
+controller and a virtual USB mouse.
 
 The code is a good base for later expansion into a more complete hardware abstraction layer.
 

@@ -131,7 +131,7 @@ void splash_init(struct splash_screen *screen, struct gfx_context *graphics,
         gfx_draw_text(graphics, 24, 128, "A tiny OS, built to learn.", muted, 0);
         gfx_draw_text(graphics, 24, 150, "Move the mouse to explore.", teal, 0);
         gfx_draw_text(graphics, 24, 184,
-                      mouse_ready ? "PS/2 MOUSE CONNECTED" : "PS/2 MOUSE NOT FOUND",
+                      mouse_ready ? "POINTING DEVICE CONNECTED" : "NO POINTER FOUND",
                       mouse_ready ? teal : (struct gfx_color){235, 174, 112}, 0);
         set_button(&screen->buttons[0], 24, 222, 136, 36, "GET STARTED", 1);
         set_button(&screen->buttons[1], 172, 222, 96, 36, "ABOUT", 2);
@@ -221,7 +221,7 @@ void splash_init(struct splash_screen *screen, struct gfx_context *graphics,
                       (struct gfx_color){63, 92, 119});
 
         gfx_draw_text(graphics, right_x + 12, mouse_y + mouse_height + 17,
-                      "PS/2 MOUSE", white, 0);
+                      "POINTER DEVICE", white, 0);
         gfx_draw_text(graphics, right_x + 12, mouse_y + mouse_height + 35,
                       mouse_ready ? "CONNECTED" : "NO DEVICE",
                       mouse_ready ? teal : (struct gfx_color){235, 174, 112}, 0);
@@ -244,7 +244,7 @@ void splash_init(struct splash_screen *screen, struct gfx_context *graphics,
                           "GRAPHICS", "FRAMEBUFFER", teal);
         draw_feature_card(graphics, margin + card_width + gap, cards_y,
                           card_width, card_height, "INPUT",
-                          mouse_ready ? "PS/2 READY" : "NO MOUSE",
+                          mouse_ready ? "POINTER READY" : "NO POINTER",
                           mouse_ready ? teal : (struct gfx_color){235, 174, 112});
         draw_feature_card(graphics, margin + (card_width + gap) * 2, cards_y,
                           card_width, card_height, "PLATFORM", "X86_64 KERNEL",

@@ -6,11 +6,36 @@
 #define PIT_COMMAND   0x43
 #define PIT_BASE_HZ   1193182u
 
+static volatile uint64_t ticks;
+static uint32_t current_frequency;
+
+uint64_t pit_ticks(void)
+{
+    return ticks;
+}
+
+void pit_tick(void)
+{
+    ticks++;
+}
+
+void pit_delay_ms(uint32_t milliseconds)
+{
+    uint64_t wait_ticks = ((uint64_t)milliseconds * current_frequency + 999) / 1000;
+    uint64_t deadline = ticks + wait_ticks;
+    while (ticks < deadline) {
+        __asm__ volatile("hlt" : : : "memory");
+    }
+}
+
 bool pit_init(uint32_t frequency_hz)
 {
     if (frequency_hz == 0) {
         return false;
     }
+
+    current_frequency = frequency_hz;
+    ticks = 0;
 
     uint32_t divisor = PIT_BASE_HZ / frequency_hz;
     if (divisor == 0 || divisor > 0xFFFF) {

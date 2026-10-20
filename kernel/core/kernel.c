@@ -2,6 +2,7 @@
 #include <drivers/input/mouse/mouse.h>
 #include <drivers/input/mouse/cursor.h>
 #include <drivers/input/ps2/controller.h>
+#include <usb/usb.h>
 #include <events/event.h>
 #include <interrupts/idt.h>
 #include <interrupts/irq12.h>
@@ -54,6 +55,12 @@ void kernel_start(void)
     }
 
     mouse_set_bounds(gfx_width(&graphics), gfx_height(&graphics));
+
+    /* USB controller polling and reset delays use the PIT tick counter. */
+    __asm__ volatile("sti" : : : "memory");
+    usb_init();
+    mouse_ready = mouse_ready || usb_pointer_connected();
+
     splash_init(&splash, &graphics, mouse_ready);
 
     const struct mouse_state *mouse = mouse_get_state();
@@ -63,9 +70,8 @@ void kernel_start(void)
                                               MOUSE_CURSOR_RENDER_HEIGHT);
     mouse_cursor_draw(&graphics, cursor_x, cursor_y);
 
-    __asm__ volatile("sti");
-
     for (;;) {
+        usb_poll();
         struct kernel_event event;
 
         /* IRQ producers are masked briefly while the event queue is read. */

@@ -45,8 +45,18 @@ Contains the core startup logic and the main kernel runtime flow.
 Low-level hardware drivers, including:
 
 - PS/2 controller interface
-- mouse support
+- PS/2 relative mouse and Synaptics touchpad support
+- USB HID pointing devices and UHCI host-controller support
 - other future device abstractions
+
+### `kernel/boot/`
+
+Limine framebuffer setup and boot-time DMA memory allocation.
+
+### `kernel/usb/`
+
+Generic USB device and transfer API, implemented over the available host
+controller drivers.
 
 ### `kernel/events/`
 
